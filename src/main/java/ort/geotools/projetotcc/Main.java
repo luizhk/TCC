@@ -102,12 +102,13 @@ public class Main extends JFrame {
     private GeomType geometryType;
     private final DataStore dataStore;
     private static SimpleFeatureSource featureSource;
+    private static SimpleFeatureSource featureSource2;
     private MapContent mapContent;
     private JMapFrame jMapFrame;
     private DefaultFeatureCollection featureCollection;
     final SimpleFeatureType TYPEEducacao = DataUtilities.createType("educacao",
         "geom:Point:srid=4326," +
-        "nomesc:String," +
+        "nome:String," +
         "rua:String," +
         "numero:double," +
         "vila:String," +
@@ -310,11 +311,11 @@ public class Main extends JFrame {
         FeatureLayer layer = new FeatureLayer(featureSource, style);
         
         
-        ////
+        ////////
         //adicionar featureSource 2
         String typeName2 = (String) featureTypeCBox2.getSelectedItem();
-        featureSource = dataStore.getFeatureSource(typeName);
-        setGeometry(featureSource);
+//        featureSource2 = dataStore.getFeatureSource(typeName2);
+//        setGeometry(featureSource2);
         SimpleFeatureSource source2 = dataStore.getFeatureSource(typeName2);
         setGeometry(source2);
         Style style2 = createDefaultStyle();
@@ -323,6 +324,7 @@ public class Main extends JFrame {
         mapContent = new MapContent();
         mapContent.addLayer(layer);
         mapContent.addLayer(layer2);
+        ////////
         jMapFrame.setMapContent(mapContent);
         jMapFrame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         jMapFrame.setExtendedState(JFrame.MAXIMIZED_BOTH);
@@ -331,7 +333,12 @@ public class Main extends JFrame {
     }
     
     void visualizarInfo(MapMouseEvent ev) throws IOException, CQLException {
-
+        
+        //arrumar 
+        if (mapContent.layers().size() > 1){
+            mapContent.layers().remove(1);
+            jMapFrame.repaint();
+        }
         System.out.println("Mouse click at: " + ev.getWorldPos());
 
         Point screenPos = ev.getPoint();
@@ -434,9 +441,10 @@ public class Main extends JFrame {
         }
         else if (typeName.equals("educacao_inf")) {
             bldr.add(p);
-            bldr.add("Santa Monica");
-            bldr.add("Aroldo Schemberger");
-            bldr.add(343);
+            JFrame frame = new JFrame("Adicionar Informação sobre a Instituição");
+            bldr.add(JOptionPane.showInputDialog(frame, "Nome da Instituição:"));
+            bldr.add(JOptionPane.showInputDialog(frame, "Rua:"));
+            bldr.add(JOptionPane.showInputDialog(frame, "Número:"));
         }
         return bldr.buildFeature(null);
     }
