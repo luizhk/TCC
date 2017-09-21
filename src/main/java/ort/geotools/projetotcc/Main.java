@@ -43,6 +43,7 @@ import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.JButton;
+import javax.swing.JLabel;
 import javax.swing.JToolBar;
 import org.geotools.data.DataUtilities;
 import org.geotools.data.DefaultTransaction;
@@ -83,26 +84,27 @@ import org.opengis.filter.identity.FeatureId;
 
 
 public class Main extends JFrame {
-    private final DataStore dataStore;
-    private final JComboBox featureTypeCBox;
-    private final JTable table;
-    private final JTextField text;    
-    private final StyleFactory sf = CommonFactoryFinder.getStyleFactory();
-    private final FilterFactory2 ff = CommonFactoryFinder.getFilterFactory2();
-    private enum GeomType { POINT, LINE, POLYGON };
     private static final Color LINE_COLOUR = Color.BLUE;
     private static final Color FILL_COLOUR = Color.CYAN;
     private static final Color SELECTED_COLOUR = Color.YELLOW;
     private static final float OPACITY = 1.0f;
     private static final float LINE_WIDTH = 1.0f;
-    private static final float POINT_SIZE = 10.0f;
-    private String geometryAttributeName;
-    private GeomType geometryType;
+    private static final float POINT_SIZE = 7.0f;
     private static Font font;
-    private static SimpleFeatureSource source;
-    private MapContent map;
-    JMapFrame show;
-    DefaultFeatureCollection featureCollection;
+    private final JComboBox featureTypeCBox;
+    private final JComboBox featureTypeCBox2;
+    private String geometryAttributeName;
+//    private final JTable table;
+//    private final JTextField text;    
+    private final StyleFactory sf = CommonFactoryFinder.getStyleFactory();
+    private final FilterFactory2 ff = CommonFactoryFinder.getFilterFactory2();
+    private enum GeomType { POINT, LINE, POLYGON };
+    private GeomType geometryType;
+    private final DataStore dataStore;
+    private static SimpleFeatureSource featureSource;
+    private MapContent mapContent;
+    private JMapFrame jMapFrame;
+    private DefaultFeatureCollection featureCollection;
     final SimpleFeatureType TYPEEducacao = DataUtilities.createType("educacao",
         "geom:Point:srid=4326," +
         "nomesc:String," +
@@ -119,26 +121,25 @@ public class Main extends JFrame {
     );
     
     public Main() throws IOException, Exception {
-        source = null;
-        map = new MapContent();
+        featureSource = null;
+        mapContent = new MapContent();
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setExtendedState(JFrame.MAXIMIZED_BOTH);
         getContentPane().setLayout(new BorderLayout());
-        
-        text = new JTextField(80);
-        text.setText("include");
-        table = new JTable();
-
-        JScrollPane scrollPane = new JScrollPane(table);
+        JLabel label1 = new JLabel();
+        label1.setText("Layer 1");
+        JLabel label2 = new JLabel();
+        label2.setText("Layer 2");
 
         JMenuBar menubar = new JMenuBar();
         setJMenuBar(menubar);
-
-        JMenu fileMenu = new JMenu("Arquivo");
-        menubar.add(fileMenu);
-
+        
         featureTypeCBox = new JComboBox();
+        featureTypeCBox2 = new JComboBox();
+        menubar.add(label1);
         menubar.add(featureTypeCBox);
+        menubar.add(label2);
+        menubar.add(featureTypeCBox2);
 
         JMenu dataMenu = new JMenu("Dados");
         menubar.add(dataMenu);
@@ -150,32 +151,33 @@ public class Main extends JFrame {
      
         pack();    
             
-        fileMenu.addSeparator();
-        fileMenu.add(new SafeAction("Sair") {
-            @Override
-            public void action(ActionEvent e) throws Throwable {
-                System.exit(0);
-            }
-        });
-        
-        dataMenu.add(new SafeAction("Características") {
-            @Override
-            public void action(ActionEvent e) throws Throwable {
-                filterFeatures();
-            }
-        });
-        dataMenu.add(new SafeAction("Somatório") {
-            @Override
-            public void action(ActionEvent e) throws Throwable {
-                countFeatures();
-            }
-        });
-        dataMenu.add(new SafeAction("Geometria") {
-            @Override
-            public void action(ActionEvent e) throws Throwable {
-                queryFeatures();
-            }
-        });
+//        fileMenu.addSeparator();
+//        fileMenu.add(new SafeAction("Sair") {
+//            @Override
+//            public void action(ActionEvent e) throws Throwable {
+//                System.exit(0);
+//            }
+//        });
+//        
+//        dataMenu.add(new SafeAction("Características") {
+//            @Override
+//            public void action(ActionEvent e) throws Throwable {
+//                filterFeatures();
+//            }
+//        });
+//        dataMenu.add(new SafeAction("Somatório") {
+//            @Override
+//            public void action(ActionEvent e) throws Throwable {
+//                countFeatures();
+//            }
+//        });
+//        dataMenu.add(new SafeAction("Geometria") {
+//            @Override
+//            public void action(ActionEvent e) throws Throwable {
+//                queryFeatures();
+//            }
+//        });
+
         dataMenu.add(new SafeAction("Exibir Grafico") {
             @Override
             public void action(ActionEvent e) throws Throwable {
@@ -188,65 +190,65 @@ public class Main extends JFrame {
     
     private void updateUI() throws Exception {
         ComboBoxModel cbm = new DefaultComboBoxModel(dataStore.getTypeNames());
+        ComboBoxModel cbm2 = new DefaultComboBoxModel(dataStore.getTypeNames());
         
         featureTypeCBox.setModel(cbm);
-
-        table.setModel(new DefaultTableModel(5, 5));
+        featureTypeCBox2.setModel(cbm2);
     }
     
-    private void filterFeatures() throws Exception {
-        String typeName = (String) featureTypeCBox.getSelectedItem();
-        source = dataStore.getFeatureSource(typeName);
-        
-        Filter filter = CQL.toFilter(text.getText());
-        SimpleFeatureCollection features = source.getFeatures(filter);
-        FeatureCollectionTableModel model = new FeatureCollectionTableModel(features);
-        table.setModel(model);
-    }
+//    private void filterFeatures() throws Exception {
+//        String typeName = (String) featureTypeCBox.getSelectedItem();
+//        featureSource = dataStore.getFeatureSource(typeName);
+//        
+//        Filter filter = CQL.toFilter(text.getText());
+//        SimpleFeatureCollection features = featureSource.getFeatures(filter);
+//        FeatureCollectionTableModel model = new FeatureCollectionTableModel(features);
+//        table.setModel(model);
+//    }
     
-    private void countFeatures() throws Exception {
-        String typeName = (String) featureTypeCBox.getSelectedItem();
-        source = dataStore.getFeatureSource(typeName);
-
-        Filter filter = CQL.toFilter(text.getText());
-        SimpleFeatureCollection features = source.getFeatures(filter);
-
-        int count = features.size();
-        JOptionPane.showMessageDialog(text, "Número de caracteristícas:" + count);
-    }
+//    private void countFeatures() throws Exception {
+//        String typeName = (String) featureTypeCBox.getSelectedItem();
+//        featureSource = dataStore.getFeatureSource(typeName);
+//
+//        Filter filter = CQL.toFilter(text.getText());
+//        SimpleFeatureCollection features = featureSource.getFeatures(filter);
+//
+//        int count = features.size();
+//        JOptionPane.showMessageDialog(text, "Número de caracteristícas:" + count);
+//    }
     
-    private void queryFeatures() throws Exception {
-        String typeName = (String) featureTypeCBox.getSelectedItem();
-        source = dataStore.getFeatureSource(typeName);
-
-        FeatureType schema = source.getSchema();
-        String name = schema.getGeometryDescriptor().getLocalName();
-
-        Filter filter = CQL.toFilter(text.getText());
-
-        Query query = new Query(typeName, filter, new String[] { name });
-
-        SimpleFeatureCollection features = source.getFeatures(query);
-
-        FeatureCollectionTableModel model = new FeatureCollectionTableModel(features);
-        table.setModel(model);
-    }
+//    private void queryFeatures() throws Exception {
+//        String typeName = (String) featureTypeCBox.getSelectedItem();
+//        featureSource = dataStore.getFeatureSource(typeName);
+//
+//        FeatureType schema = featureSource.getSchema();
+//        String name = schema.getGeometryDescriptor().getLocalName();
+//
+//        Filter filter = CQL.toFilter(text.getText());
+//
+//        Query query = new Query(typeName, filter, new String[] { name });
+//
+//        SimpleFeatureCollection features = featureSource.getFeatures(query);
+//
+//        FeatureCollectionTableModel model = new FeatureCollectionTableModel(features);
+//        table.setModel(model);
+//    }
     
     private void exibirGrafico() throws Exception {
         String typeName = (String) featureTypeCBox.getSelectedItem();
-        source = dataStore.getFeatureSource(typeName);
-        setGeometry();
-        show = new JMapFrame();
-        show.enableToolBar( true );
-        show.enableStatusBar( true );
+        featureSource = dataStore.getFeatureSource(typeName);
+        setGeometry(featureSource);
+        jMapFrame = new JMapFrame();
+        jMapFrame.enableToolBar( true );
+        jMapFrame.enableStatusBar( true );
         
-        show.enableInputMethods( true );
-        JToolBar toolBar = show.getToolBar();
+        jMapFrame.enableInputMethods( true );
+        JToolBar toolBar = jMapFrame.getToolBar();
         toolBar.addSeparator();
         JButton btn = null;
-        if (("bairros distritos geomorfologia limite-município loteamentos quadras zoneamento").contains(typeName)) {
+        if (("bairros distritos geomorfologia limite-município loteamentos quadras zoneamento limite-municipio").contains(typeName)) {
             btn = new JButton("Visualizar Informações Adicionais");
-            btn.addActionListener(e -> show.getMapPane().setCursorTool(
+            btn.addActionListener(e -> jMapFrame.getMapPane().setCursorTool(
             new CursorTool() {  
                 @Override
                 public void onMouseClicked(MapMouseEvent ev) {
@@ -264,7 +266,7 @@ public class Main extends JFrame {
         switch (typeName) {
             case "educacao":
                 btn = new JButton("Adicionar Ponto - Educação");
-                btn.addActionListener(e -> show.getMapPane().setCursorTool(
+                btn.addActionListener(e -> jMapFrame.getMapPane().setCursorTool(
                         new CursorTool() {
                             @Override
                             public void onMouseClicked(MapMouseEvent ev) {
@@ -278,7 +280,7 @@ public class Main extends JFrame {
                 )); break;
             case "educacao_inf":
                 btn = new JButton("Adicionar Ponto - Educação Infantil");
-                btn.addActionListener(e -> show.getMapPane().setCursorTool(
+                btn.addActionListener(e -> jMapFrame.getMapPane().setCursorTool(
                         new CursorTool() {
                             @Override
                             public void onMouseClicked(MapMouseEvent ev) {
@@ -305,16 +307,27 @@ public class Main extends JFrame {
         toolBar.add(btn);
         
         Style style = createDefaultStyle();
-        FeatureLayer layer = new FeatureLayer(source, style);
-        map = new MapContent();
-        map.addLayer(layer);
+        FeatureLayer layer = new FeatureLayer(featureSource, style);
         
         
-        show.setMapContent(map);
-        show.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-        show.setExtendedState(JFrame.MAXIMIZED_BOTH);
+        ////
+        //adicionar featureSource 2
+        String typeName2 = (String) featureTypeCBox2.getSelectedItem();
+        featureSource = dataStore.getFeatureSource(typeName);
+        setGeometry(featureSource);
+        SimpleFeatureSource source2 = dataStore.getFeatureSource(typeName2);
+        setGeometry(source2);
+        Style style2 = createDefaultStyle();
+        FeatureLayer layer2 = new FeatureLayer(source2, style2);
+        ////
+        mapContent = new MapContent();
+        mapContent.addLayer(layer);
+        mapContent.addLayer(layer2);
+        jMapFrame.setMapContent(mapContent);
+        jMapFrame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        jMapFrame.setExtendedState(JFrame.MAXIMIZED_BOTH);
                 
-        show.setVisible(true);
+        jMapFrame.setVisible(true);
     }
     
     void visualizarInfo(MapMouseEvent ev) throws IOException, CQLException {
@@ -324,15 +337,15 @@ public class Main extends JFrame {
         Point screenPos = ev.getPoint();
         Rectangle screenRect = new Rectangle(screenPos.x-2, screenPos.y-2, 5, 5);
 
-        AffineTransform screenToWorld = show.getMapPane().getScreenToWorldTransform();
+        AffineTransform screenToWorld = jMapFrame.getMapPane().getScreenToWorldTransform();
         Rectangle2D worldRect = screenToWorld.createTransformedShape(screenRect).getBounds2D();
-        ReferencedEnvelope bbox = new ReferencedEnvelope(worldRect, show.getMapContent().getCoordinateReferenceSystem());
+        ReferencedEnvelope bbox = new ReferencedEnvelope(worldRect, jMapFrame.getMapContent().getCoordinateReferenceSystem());
 
         Filter filter = CQL.toFilter("BBOX(geom, " + bbox.getMinX() +
         ", " + bbox.getMinY() + ", " + bbox.getMaxX() + ", " + bbox.getMaxY()
         + ")");
         try {
-            SimpleFeatureCollection selectedFeatures =  source.getFeatures(filter);
+            SimpleFeatureCollection selectedFeatures =  featureSource.getFeatures(filter);
 
             Set<FeatureId> IDs = new HashSet<>();
             try (SimpleFeatureIterator iter = selectedFeatures.features()) {
@@ -345,7 +358,7 @@ public class Main extends JFrame {
                     
                     displaySelectedFeatures(IDs);
                     DecimalFormat df = new DecimalFormat("#.##");
-                    JOptionPane.showMessageDialog(show, "Area: " 
+                    JOptionPane.showMessageDialog(jMapFrame, "Area: " 
                             + df.format(geom.getArea()/1000000)+" Km²\n Nome: " 
                             +(String) feature.getAttribute("nome"), "Informações", JOptionPane.PLAIN_MESSAGE);
                     break;
@@ -366,8 +379,8 @@ public class Main extends JFrame {
         SimpleFeatureBuilder BLDR = new SimpleFeatureBuilder(TYPEEducacao);
         Coordinate pos = new Coordinate(p.getX(), p.getY());
         String typeName = (String) featureTypeCBox.getSelectedItem();
-        source = dataStore.getFeatureSource(typeName);        
-        Style style = SLD.createSimpleStyle(source.getSchema());
+        featureSource = dataStore.getFeatureSource(typeName);        
+        Style style = SLD.createSimpleStyle(featureSource.getSchema());
         featureCollection = new DefaultFeatureCollection("internal", TYPEEducacao);
         featureCollection.add(createFeature(BLDR, pos, 1,typeName));
         FeatureLayer layer = new FeatureLayer(featureCollection, style);      
@@ -381,16 +394,16 @@ public class Main extends JFrame {
         catch( Exception eek){
             transaction.rollback();
         }
-        map.addLayer(layer);
-        show.repaint();          
+        mapContent.addLayer(layer);
+        jMapFrame.repaint();          
     }
     void adicionarEducacaoInf(MapMouseEvent ev) throws IOException {
         DirectPosition2D p = ev.getWorldPos();
         SimpleFeatureBuilder BLDR = new SimpleFeatureBuilder(TYPEEducacao_inf);
         Coordinate pos = new Coordinate(p.getX(), p.getY());
         String typeName = (String) featureTypeCBox.getSelectedItem();
-        source = dataStore.getFeatureSource(typeName);        
-        Style style = SLD.createSimpleStyle(source.getSchema());
+        featureSource = dataStore.getFeatureSource(typeName);        
+        Style style = SLD.createSimpleStyle(featureSource.getSchema());
         featureCollection = new DefaultFeatureCollection("internal", TYPEEducacao_inf);
         featureCollection.add(createFeature(BLDR, pos, 1,typeName));
         FeatureLayer layer = new FeatureLayer(featureCollection, style);      
@@ -404,8 +417,8 @@ public class Main extends JFrame {
         catch( Exception eek){
             transaction.rollback();
         }
-        map.addLayer(layer);
-        show.repaint();          
+        mapContent.addLayer(layer);
+        jMapFrame.repaint();          
     }
 
     private SimpleFeature createFeature(SimpleFeatureBuilder bldr, Coordinate pos, int id, String typeName) {
@@ -437,9 +450,9 @@ public class Main extends JFrame {
             style = createSelectedStyle(IDs);
         }
 
-        Layer layer = show.getMapContent().layers().get(0);
+        Layer layer = jMapFrame.getMapContent().layers().get(0);
         ((FeatureLayer) layer).setStyle(style);
-        show.getMapPane().repaint();
+        jMapFrame.getMapPane().repaint();
     }
 
     private Style createDefaultStyle() {
@@ -509,7 +522,7 @@ public class Main extends JFrame {
         return rule;
     }
 
-    private void setGeometry() {
+    private void setGeometry(SimpleFeatureSource source) {
         GeometryDescriptor geomDesc = source.getSchema().getGeometryDescriptor();
         geometryAttributeName = geomDesc.getLocalName();
 
