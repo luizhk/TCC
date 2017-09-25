@@ -22,18 +22,12 @@ import javax.swing.JFrame;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JOptionPane;
-import javax.swing.JScrollPane;
-import javax.swing.JTable;
-import javax.swing.JTextField;
-import javax.swing.table.DefaultTableModel;
 import org.geotools.data.DataStore;
 import org.geotools.data.Query;
 import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.data.simple.SimpleFeatureSource;
 import org.geotools.filter.text.cql2.CQL;
 import org.geotools.swing.action.SafeAction;
-import org.geotools.swing.table.FeatureCollectionTableModel;
-import org.opengis.feature.type.FeatureType;
 import org.opengis.filter.Filter;
 import java.io.IOException;
 import java.text.DecimalFormat;
@@ -91,8 +85,8 @@ public class Main extends JFrame {
     private static final float LINE_WIDTH = 1.0f;
     private static final float POINT_SIZE = 7.0f;
     private static Font font;
-    private final JComboBox featureTypeCBox;
-    private final JComboBox featureTypeCBox2;
+    private JComboBox featureTypeCBox;
+    private JComboBox featureTypeCBox2;
     private String geometryAttributeName;
 //    private final JTable table;
 //    private final JTextField text;    
@@ -100,7 +94,7 @@ public class Main extends JFrame {
     private final FilterFactory2 ff = CommonFactoryFinder.getFilterFactory2();
     private enum GeomType { POINT, LINE, POLYGON };
     private GeomType geometryType;
-    private final DataStore dataStore;
+    private DataStore dataStore;
     private static SimpleFeatureSource featureSource;
     private static SimpleFeatureSource featureSource2;
     private MapContent mapContent;
@@ -122,6 +116,11 @@ public class Main extends JFrame {
     );
     
     public Main() throws IOException, Exception {
+        configuracaoInicial();
+        updateUI();
+    }
+    
+    private void configuracaoInicial() throws IOException{
         featureSource = null;
         mapContent = new MapContent();
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -150,35 +149,7 @@ public class Main extends JFrame {
             JOptionPane.showMessageDialog(null, "Não foi possível conectar - Confirmar Parâmetros");
         }
      
-        pack();    
-            
-//        fileMenu.addSeparator();
-//        fileMenu.add(new SafeAction("Sair") {
-//            @Override
-//            public void action(ActionEvent e) throws Throwable {
-//                System.exit(0);
-//            }
-//        });
-//        
-//        dataMenu.add(new SafeAction("Características") {
-//            @Override
-//            public void action(ActionEvent e) throws Throwable {
-//                filterFeatures();
-//            }
-//        });
-//        dataMenu.add(new SafeAction("Somatório") {
-//            @Override
-//            public void action(ActionEvent e) throws Throwable {
-//                countFeatures();
-//            }
-//        });
-//        dataMenu.add(new SafeAction("Geometria") {
-//            @Override
-//            public void action(ActionEvent e) throws Throwable {
-//                queryFeatures();
-//            }
-//        });
-
+        pack();
         dataMenu.add(new SafeAction("Exibir Grafico") {
             @Override
             public void action(ActionEvent e) throws Throwable {
@@ -186,7 +157,6 @@ public class Main extends JFrame {
             }
         });
         
-        updateUI();
     }
     
     private void updateUI() throws Exception {
@@ -257,9 +227,7 @@ public class Main extends JFrame {
                     public void onMouseClicked(MapMouseEvent ev) {
                         try {
                             visualizarInfo(ev);
-                        } catch (IOException ex) {
-                            Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, ex);
-                        } catch (CQLException ex) {
+                        } catch (CQLException | IOException ex) {
                             Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, ex);
                         }
                     }
@@ -268,15 +236,13 @@ public class Main extends JFrame {
             }
             else{
                 btn = new JButton("Visualizar Incidência de Pontos");
-                btn.addActionListener(e -> jMapFrame.getMapPane().setCursorTool(
+                btn.addActionListener((ActionEvent e) -> jMapFrame.getMapPane().setCursorTool(
                 new CursorTool() {
                     @Override
                     public void onMouseClicked(MapMouseEvent ev) {
                         try {
                             visualizarPontos(ev);
-                        } catch (IOException ex) {
-                            Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, ex);
-                        } catch (CQLException ex) {
+                        } catch (IOException | CQLException ex) {
                             Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, ex);
                         }
                     }
@@ -396,7 +362,7 @@ public class Main extends JFrame {
             }
 
         } catch (IOException | NoSuchElementException ex) {
-            ex.printStackTrace();
+            ex.printStackTrace(System.out);
         }
         
     }
@@ -445,36 +411,8 @@ public class Main extends JFrame {
         } finally {
             iterator.close();
         }
-        JOptionPane.showMessageDialog(jMapFrame, "At most " + max + " " + typeName2 + " features in a single " + typeName+ " feature");
+        JOptionPane.showMessageDialog(jMapFrame, max + " " + typeName2 + " pontos em " + typeName);
 
-//        try {
-//            SimpleFeatureCollection selectedFeatures =  featureSource.getFeatures(filter);
-//
-//            Set<FeatureId> IDs = new HashSet<>();
-//            try (SimpleFeatureIterator iter = selectedFeatures.features()) {
-//                while (iter.hasNext()) {
-//                    
-//                    SimpleFeature feature = iter.next();                    
-//                    IDs.add(feature.getIdentifier());
-//                    System.out.println("   " + feature.getIdentifier());
-//                    Geometry geom = (Geometry) feature.getDefaultGeometry();
-//                    
-//                    displaySelectedFeatures(IDs);
-//                    DecimalFormat df = new DecimalFormat("#.##");
-//                    JOptionPane.showMessageDialog(jMapFrame, "Area: " 
-//                            + df.format(geom.getArea()/1000000)+" Km²\n Nome: " 
-//                            +(String) feature.getAttribute("nome"), "Informações", JOptionPane.PLAIN_MESSAGE);
-//                    break;
-//                }
-//            }
-//
-//            if (IDs.isEmpty()) {
-//                System.out.println("   no feature selected");
-//            }
-//
-//        } catch (IOException | NoSuchElementException ex) {
-//            ex.printStackTrace();
-//        }
         
     }
     
