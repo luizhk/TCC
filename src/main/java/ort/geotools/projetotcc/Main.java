@@ -237,6 +237,7 @@ public class Main extends JFrame {
     
     private void exibirGrafico() throws Exception {
         String typeName = (String) featureTypeCBox.getSelectedItem();
+        String typeName2 = (String) featureTypeCBox2.getSelectedItem();
         featureSource = dataStore.getFeatureSource(typeName);
         setGeometry(featureSource);
         jMapFrame = new JMapFrame();
@@ -248,21 +249,40 @@ public class Main extends JFrame {
         toolBar.addSeparator();
         JButton btn = null;
         if (("bairros distritos geomorfologia limite-município loteamentos quadras zoneamento limite-municipio").contains(typeName)) {
-            btn = new JButton("Visualizar Informações Adicionais");
-            btn.addActionListener(e -> jMapFrame.getMapPane().setCursorTool(
-            new CursorTool() {  
-                @Override
-                public void onMouseClicked(MapMouseEvent ev) {
-                    try {
-                        visualizarInfo(ev);
-                    } catch (IOException ex) {
-                        Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, ex);
-                    } catch (CQLException ex) {
-                        Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, ex);
+            if (("bairros distritos geomorfologia limite-município loteamentos quadras zoneamento limite-municipio").contains(typeName2)) {
+                btn = new JButton("Visualizar Informações Adicionais");
+                btn.addActionListener(e -> jMapFrame.getMapPane().setCursorTool(
+                new CursorTool() {
+                    @Override
+                    public void onMouseClicked(MapMouseEvent ev) {
+                        try {
+                            visualizarInfo(ev);
+                        } catch (IOException ex) {
+                            Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, ex);
+                        } catch (CQLException ex) {
+                            Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, ex);
+                        }
                     }
                 }
+                ));
             }
-            ));
+            else{
+                btn = new JButton("Visualizar Incidência de Pontos");
+                btn.addActionListener(e -> jMapFrame.getMapPane().setCursorTool(
+                new CursorTool() {
+                    @Override
+                    public void onMouseClicked(MapMouseEvent ev) {
+                        try {
+                            visualizarPontos(ev);
+                        } catch (IOException ex) {
+                            Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, ex);
+                        } catch (CQLException ex) {
+                            Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, ex);
+                        }
+                    }
+                }
+                ));
+            }
         }
         switch (typeName) {
             case "educacao":
@@ -313,8 +333,7 @@ public class Main extends JFrame {
         
         ////////
         //adicionar featureSource 2
-        String typeName2 = (String) featureTypeCBox2.getSelectedItem();
-//        featureSource2 = dataStore.getFeatureSource(typeName2);
+        featureSource2 = dataStore.getFeatureSource(typeName2);
 //        setGeometry(featureSource2);
         SimpleFeatureSource source2 = dataStore.getFeatureSource(typeName2);
         setGeometry(source2);
@@ -381,6 +400,84 @@ public class Main extends JFrame {
         }
         
     }
+    void visualizarPontos(MapMouseEvent ev) throws IOException, CQLException {
+        
+        //arrumar 
+//        System.out.println("Mouse click at: " + ev.getWorldPos());
+        Point screenPos = ev.getPoint();
+        Rectangle screenRect = new Rectangle(screenPos.x-2, screenPos.y-2, 5, 5);
+
+        AffineTransform screenToWorld = jMapFrame.getMapPane().getScreenToWorldTransform();
+        Rectangle2D worldRect = screenToWorld.createTransformedShape(screenRect).getBounds2D();
+        ReferencedEnvelope bbox = new ReferencedEnvelope(worldRect, jMapFrame.getMapContent().getCoordinateReferenceSystem());
+
+        Filter filter = CQL.toFilter("BBOX(geom, " + bbox.getMinX() +
+        ", " + bbox.getMinY() + ", " + bbox.getMaxX() + ", " + bbox.getMaxY()
+        + ")");
+        
+        SimpleFeatureType schema = featureSource.getSchema();
+        String typeName = schema.getTypeName();
+        
+        SimpleFeatureType schema2 = featureSource2.getSchema();
+        String typeName2 = schema2.getTypeName();
+        String geomName2 = schema2.getGeometryDescriptor().getLocalName();
+        
+        SimpleFeatureCollection outerFeatures = featureSource.getFeatures(filter);
+        SimpleFeatureIterator iterator = outerFeatures.features();
+            int max = 0;
+        try {
+            while (iterator.hasNext()) {
+                SimpleFeature feature = iterator.next();
+                try {
+                    Geometry geometry = (Geometry) feature.getDefaultGeometry();
+                    if (!geometry.isValid()) {
+                        // skip bad data
+                        continue;
+                    }
+                    Filter innerFilter = ff.intersects(ff.property(geomName2), ff.literal(geometry));
+                    Query innerQuery = new Query(typeName2, innerFilter, Query.NO_NAMES);
+                    SimpleFeatureCollection join = featureSource2.getFeatures(innerQuery);
+                    int size = join.size();
+                    max = Math.max(max, size);
+                } catch (Exception skipBadData) {
+                }
+            }
+        } finally {
+            iterator.close();
+        }
+        JOptionPane.showMessageDialog(jMapFrame, "At most " + max + " " + typeName2 + " features in a single " + typeName+ " feature");
+
+//        try {
+//            SimpleFeatureCollection selectedFeatures =  featureSource.getFeatures(filter);
+//
+//            Set<FeatureId> IDs = new HashSet<>();
+//            try (SimpleFeatureIterator iter = selectedFeatures.features()) {
+//                while (iter.hasNext()) {
+//                    
+//                    SimpleFeature feature = iter.next();                    
+//                    IDs.add(feature.getIdentifier());
+//                    System.out.println("   " + feature.getIdentifier());
+//                    Geometry geom = (Geometry) feature.getDefaultGeometry();
+//                    
+//                    displaySelectedFeatures(IDs);
+//                    DecimalFormat df = new DecimalFormat("#.##");
+//                    JOptionPane.showMessageDialog(jMapFrame, "Area: " 
+//                            + df.format(geom.getArea()/1000000)+" Km²\n Nome: " 
+//                            +(String) feature.getAttribute("nome"), "Informações", JOptionPane.PLAIN_MESSAGE);
+//                    break;
+//                }
+//            }
+//
+//            if (IDs.isEmpty()) {
+//                System.out.println("   no feature selected");
+//            }
+//
+//        } catch (IOException | NoSuchElementException ex) {
+//            ex.printStackTrace();
+//        }
+        
+    }
+    
     void adicionarEducacao(MapMouseEvent ev) throws IOException {
         DirectPosition2D p = ev.getWorldPos();
         SimpleFeatureBuilder BLDR = new SimpleFeatureBuilder(TYPEEducacao);
