@@ -68,6 +68,7 @@ import org.geotools.styling.StyleBuilder;
 import org.geotools.styling.StyleFactory;
 import org.geotools.styling.Symbolizer;
 import org.geotools.swing.JMapFrame;
+import static org.geotools.swing.JMapFrame.Tool.*;
 import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.feature.simple.SimpleFeatureType;
 import org.geotools.swing.event.MapMouseEvent;
@@ -167,44 +168,6 @@ public class Main extends JFrame {
         featureTypeCBox2.setModel(cbm2);
     }
     
-//    private void filterFeatures() throws Exception {
-//        String typeName = (String) featureTypeCBox.getSelectedItem();
-//        featureSource = dataStore.getFeatureSource(typeName);
-//        
-//        Filter filter = CQL.toFilter(text.getText());
-//        SimpleFeatureCollection features = featureSource.getFeatures(filter);
-//        FeatureCollectionTableModel model = new FeatureCollectionTableModel(features);
-//        table.setModel(model);
-//    }
-    
-//    private void countFeatures() throws Exception {
-//        String typeName = (String) featureTypeCBox.getSelectedItem();
-//        featureSource = dataStore.getFeatureSource(typeName);
-//
-//        Filter filter = CQL.toFilter(text.getText());
-//        SimpleFeatureCollection features = featureSource.getFeatures(filter);
-//
-//        int count = features.size();
-//        JOptionPane.showMessageDialog(text, "Número de caracteristícas:" + count);
-//    }
-    
-//    private void queryFeatures() throws Exception {
-//        String typeName = (String) featureTypeCBox.getSelectedItem();
-//        featureSource = dataStore.getFeatureSource(typeName);
-//
-//        FeatureType schema = featureSource.getSchema();
-//        String name = schema.getGeometryDescriptor().getLocalName();
-//
-//        Filter filter = CQL.toFilter(text.getText());
-//
-//        Query query = new Query(typeName, filter, new String[] { name });
-//
-//        SimpleFeatureCollection features = featureSource.getFeatures(query);
-//
-//        FeatureCollectionTableModel model = new FeatureCollectionTableModel(features);
-//        table.setModel(model);
-//    }
-    
     private void exibirGrafico() throws Exception {
         String typeName = (String) featureTypeCBox.getSelectedItem();
         String typeName2 = (String) featureTypeCBox2.getSelectedItem();
@@ -213,6 +176,7 @@ public class Main extends JFrame {
         jMapFrame = new JMapFrame();
         jMapFrame.enableToolBar( true );
         jMapFrame.enableStatusBar( true );
+        jMapFrame.enableTool(PAN,ZOOM, SCROLLWHEEL, RESET, INFO, POINTER);
         
         jMapFrame.enableInputMethods( true );
         JToolBar toolBar = jMapFrame.getToolBar();
@@ -319,11 +283,12 @@ public class Main extends JFrame {
     
     void visualizarInfo(MapMouseEvent ev) throws IOException, CQLException {
         
-        //arrumar 
+//        remover segundo layer da visualização
         if (mapContent.layers().size() > 1){
             mapContent.layers().remove(1);
             jMapFrame.repaint();
         }
+        
         System.out.println("Mouse click at: " + ev.getWorldPos());
 
         Point screenPos = ev.getPoint();
@@ -356,9 +321,11 @@ public class Main extends JFrame {
                     break;
                 }
             }
+            
+            jMapFrame.repaint();
 
             if (IDs.isEmpty()) {
-                System.out.println("   no feature selected");
+                System.out.println("Nenhum intem selecionado");
             }
 
         } catch (IOException | NoSuchElementException ex) {
@@ -367,9 +334,7 @@ public class Main extends JFrame {
         
     }
     void visualizarPontos(MapMouseEvent ev) throws IOException, CQLException {
-        
-        //arrumar 
-//        System.out.println("Mouse click at: " + ev.getWorldPos());
+
         Point screenPos = ev.getPoint();
         Rectangle screenRect = new Rectangle(screenPos.x-2, screenPos.y-2, 5, 5);
 
@@ -397,7 +362,7 @@ public class Main extends JFrame {
                 try {
                     Geometry geometry = (Geometry) feature.getDefaultGeometry();
                     if (!geometry.isValid()) {
-                        // skip bad data
+                        // desconsiderar geometria inválida
                         continue;
                     }
                     Filter innerFilter = ff.intersects(ff.property(geomName2), ff.literal(geometry));
@@ -468,11 +433,12 @@ public class Main extends JFrame {
         com.vividsolutions.jts.geom.Point p = geofactory.createPoint(pos);
         if (typeName.equals("educacao")) {
             bldr.add(p);
-            bldr.add("Santa Monica");
-            bldr.add("Aroldo Schemberger");
-            bldr.add(343);
-            bldr.add("Jardim Carvalho");
-            bldr.add(84016740);
+            JFrame frame = new JFrame("Adicionar Informação sobre a Instituição");
+            bldr.add(JOptionPane.showInputDialog(frame, "Nome:"));
+            bldr.add(JOptionPane.showInputDialog(frame, "Rua:"));
+            bldr.add(JOptionPane.showInputDialog(frame, "Número:"));
+            bldr.add(JOptionPane.showInputDialog(frame, "Bairro:"));
+            bldr.add(JOptionPane.showInputDialog(frame, "CEP:"));
         }
         else if (typeName.equals("educacao_inf")) {
             bldr.add(p);
