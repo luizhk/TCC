@@ -81,16 +81,16 @@ import org.opengis.filter.identity.FeatureId;
 public class Main extends JFrame {
     private static final Color LINE_COLOUR = Color.BLUE;
     private static final Color FILL_COLOUR = Color.CYAN;
+    private static final Color LINE_COLOUR2 = Color.RED;
+    private static final Color FILL_COLOUR2 = Color.GREEN;
     private static final Color SELECTED_COLOUR = Color.YELLOW;
     private static final float OPACITY = 1.0f;
     private static final float LINE_WIDTH = 1.0f;
-    private static final float POINT_SIZE = 7.0f;
+    private static final float POINT_SIZE = 4.0f;
     private static Font font;
     private JComboBox featureTypeCBox;
     private JComboBox featureTypeCBox2;
     private String geometryAttributeName;
-//    private final JTable table;
-//    private final JTextField text;    
     private final StyleFactory sf = CommonFactoryFinder.getStyleFactory();
     private final FilterFactory2 ff = CommonFactoryFinder.getFilterFactory2();
     private enum GeomType { POINT, LINE, POLYGON };
@@ -118,7 +118,7 @@ public class Main extends JFrame {
     
     public Main() throws IOException, Exception {
         configuracaoInicial();
-        updateUI();
+        atualizarIU();
     }
     
     private void configuracaoInicial() throws IOException{
@@ -160,7 +160,7 @@ public class Main extends JFrame {
         
     }
     
-    private void updateUI() throws Exception {
+    private void atualizarIU() throws Exception {
         ComboBoxModel cbm = new DefaultComboBoxModel(dataStore.getTypeNames());
         ComboBoxModel cbm2 = new DefaultComboBoxModel(dataStore.getTypeNames());
         
@@ -173,10 +173,25 @@ public class Main extends JFrame {
         String typeName2 = (String) featureTypeCBox2.getSelectedItem();
         featureSource = dataStore.getFeatureSource(typeName);
         setGeometry(featureSource);
+        Style style = criarDefaultStylePrimeiroLayer();
+        FeatureLayer layer = new FeatureLayer(featureSource, style);
+        ////////
+        //adicionar featureSource 2
+        featureSource2 = dataStore.getFeatureSource(typeName2);
+//        setGeometry(featureSource2);
+        SimpleFeatureSource source2 = dataStore.getFeatureSource(typeName2);
+        setGeometry(source2);
+        Style style2 = criarDefaultStyleSegundoLayer();
+        FeatureLayer layer2 = new FeatureLayer(source2, style2);
+        ////
+        mapContent = new MapContent();
+        mapContent.addLayer(layer);
+        mapContent.addLayer(layer2);
+        ////////
         jMapFrame = new JMapFrame();
         jMapFrame.enableToolBar( true );
-        jMapFrame.enableStatusBar( true );
-        jMapFrame.enableTool(PAN,ZOOM, SCROLLWHEEL, RESET, INFO, POINTER);
+        jMapFrame.enableStatusBar( false );
+        jMapFrame.enableTool(PAN, ZOOM, SCROLLWHEEL, RESET);
         
         jMapFrame.enableInputMethods( true );
         JToolBar toolBar = jMapFrame.getToolBar();
@@ -197,6 +212,11 @@ public class Main extends JFrame {
                     }
                 }
                 ));
+                if (typeName.equals(typeName2)){
+                    //remover segundo layer da visualização
+                    mapContent.layers().remove(1);
+                    jMapFrame.repaint();
+                }
             }
             else{
                 btn = new JButton("Visualizar Incidência de Pontos");
@@ -257,38 +277,15 @@ public class Main extends JFrame {
         }
         toolBar.add(btn);
         
-        Style style = createDefaultStyle();
-        FeatureLayer layer = new FeatureLayer(featureSource, style);
-        
-        
-        ////////
-        //adicionar featureSource 2
-        featureSource2 = dataStore.getFeatureSource(typeName2);
-//        setGeometry(featureSource2);
-        SimpleFeatureSource source2 = dataStore.getFeatureSource(typeName2);
-        setGeometry(source2);
-        Style style2 = createDefaultStyle();
-        FeatureLayer layer2 = new FeatureLayer(source2, style2);
-        ////
-        mapContent = new MapContent();
-        mapContent.addLayer(layer);
-        mapContent.addLayer(layer2);
-        ////////
+
         jMapFrame.setMapContent(mapContent);
         jMapFrame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-        jMapFrame.setExtendedState(JFrame.MAXIMIZED_BOTH);
-                
+        jMapFrame.setExtendedState(JFrame.MAXIMIZED_BOTH);                
         jMapFrame.setVisible(true);
     }
     
     void visualizarInfo(MapMouseEvent ev) throws IOException, CQLException {
-        
-//        remover segundo layer da visualização
-        if (mapContent.layers().size() > 1){
-            mapContent.layers().remove(1);
-            jMapFrame.repaint();
-        }
-        
+                       
         System.out.println("Mouse click at: " + ev.getWorldPos());
 
         Point screenPos = ev.getPoint();
@@ -453,7 +450,7 @@ public class Main extends JFrame {
         Style style;
 
         if (IDs.isEmpty()) {
-            style = createDefaultStyle();
+            style = criarDefaultStylePrimeiroLayer();
 
         } else {
             style = createSelectedStyle(IDs);
@@ -464,7 +461,7 @@ public class Main extends JFrame {
         jMapFrame.getMapPane().repaint();
     }
 
-    private Style createDefaultStyle() {
+    private Style criarDefaultStylePrimeiroLayer() {
         Rule rule = createRule(LINE_COLOUR, FILL_COLOUR);
 
         FeatureTypeStyle fts = sf.createFeatureTypeStyle();
@@ -472,7 +469,20 @@ public class Main extends JFrame {
 
         StyleBuilder styleBuilder = new StyleBuilder();
         font = styleBuilder.createFont(new java.awt.Font("Verdana",java.awt.Font.PLAIN,11));
-        Style style = SLD.createPolygonStyle(Color.red, Color.green, 1f, "nome", font);
+        Style style = SLD.createPolygonStyle(Color.RED, Color.GREEN, 1f, "nome", font);
+     
+        style.featureTypeStyles().add(fts);
+        return style;
+    }
+    private Style criarDefaultStyleSegundoLayer() {
+        Rule rule = createRule(LINE_COLOUR2, FILL_COLOUR2);
+
+        FeatureTypeStyle fts = sf.createFeatureTypeStyle();
+        fts.rules().add(rule);
+
+        StyleBuilder styleBuilder = new StyleBuilder();
+        font = styleBuilder.createFont(new java.awt.Font("Verdana",java.awt.Font.PLAIN,11));
+        Style style = SLD.createPolygonStyle(Color.RED, Color.GREEN, 1f, "nome", font);
      
         style.featureTypeStyles().add(fts);
         return style;
