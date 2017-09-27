@@ -115,6 +115,20 @@ public class Main extends JFrame {
         "rua:String," +
         "numero:double"
     );
+    final SimpleFeatureType TYPEEsporte = DataUtilities.createType("esporte",
+        "geom:Point:srid=4326," +
+        "tipo:String," +
+        "nome:String," +
+        "logradouro:String," +
+        "numero:double," +
+        "localiza:String"
+    );
+    final SimpleFeatureType TYPEPontosSaude = DataUtilities.createType("pontos_saude",
+        "geom:Point:srid=4326," +
+        "nome:String," +
+        "rua:String," +
+        "numero:double"
+    );
     
     public Main() throws IOException, Exception {
         configuracaoInicial();
@@ -175,19 +189,14 @@ public class Main extends JFrame {
         setGeometry(featureSource);
         Style style = criarDefaultStylePrimeiroLayer();
         FeatureLayer layer = new FeatureLayer(featureSource, style);
-        ////////
-        //adicionar featureSource 2
         featureSource2 = dataStore.getFeatureSource(typeName2);
-//        setGeometry(featureSource2);
         SimpleFeatureSource source2 = dataStore.getFeatureSource(typeName2);
         setGeometry(source2);
         Style style2 = criarDefaultStyleSegundoLayer();
         FeatureLayer layer2 = new FeatureLayer(source2, style2);
-        ////
         mapContent = new MapContent();
         mapContent.addLayer(layer);
         mapContent.addLayer(layer2);
-        ////////
         jMapFrame = new JMapFrame();
         jMapFrame.enableToolBar( true );
         jMapFrame.enableStatusBar( false );
@@ -242,7 +251,7 @@ public class Main extends JFrame {
                             @Override
                             public void onMouseClicked(MapMouseEvent ev) {
                                 try {
-                                    adicionarEducacao(ev);
+                                    adicionarPonto(ev, typeName);
                                 } catch (IOException ex) {
                                     Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, ex);
                                 }
@@ -256,7 +265,7 @@ public class Main extends JFrame {
                             @Override
                             public void onMouseClicked(MapMouseEvent ev) {
                                 try {
-                                    adicionarEducacaoInf(ev);
+                                    adicionarPonto(ev,typeName);
                                 } catch (IOException ex) {
                                     Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, ex);
                                 }
@@ -265,13 +274,32 @@ public class Main extends JFrame {
                 )); break;
             case "esporte":
                 btn = new JButton("Adicionar Ponto - Esporte");
-                break;
+                        btn.addActionListener(e -> jMapFrame.getMapPane().setCursorTool(
+                        new CursorTool() {
+                            @Override
+                            public void onMouseClicked(MapMouseEvent ev) {
+                                try {
+                                    adicionarPonto(ev,typeName);
+                                } catch (IOException ex) {
+                                    Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, ex);
+                                }
+                            }
+                        }
+                )); break;
             case "pontos_saude":
                 btn = new JButton("Adicionar Ponto - Pontos de Saude");
-                break;
-            case "pontos_taxi":
-                btn = new JButton("Adicionar Ponto - Pontos Taxi");        
-                break;
+                        btn.addActionListener(e -> jMapFrame.getMapPane().setCursorTool(
+                        new CursorTool() {
+                            @Override
+                            public void onMouseClicked(MapMouseEvent ev) {
+                                try {
+                                    adicionarPonto(ev,typeName);
+                                } catch (IOException ex) {
+                                    Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, ex);
+                                }
+                            }
+                        }
+                )); break;
             default:
                 break;
         }
@@ -378,14 +406,28 @@ public class Main extends JFrame {
         
     }
     
-    void adicionarEducacao(MapMouseEvent ev) throws IOException {
+    void adicionarPonto(MapMouseEvent ev, String typeName) throws IOException {
         DirectPosition2D p = ev.getWorldPos();
         SimpleFeatureBuilder BLDR = new SimpleFeatureBuilder(TYPEEducacao);
         Coordinate pos = new Coordinate(p.getX(), p.getY());
-        String typeName = (String) featureTypeCBox.getSelectedItem();
+//        String typeName = (String) featureTypeCBox.getSelectedItem();
         featureSource = dataStore.getFeatureSource(typeName);        
         Style style = SLD.createSimpleStyle(featureSource.getSchema());
-        featureCollection = new DefaultFeatureCollection("internal", TYPEEducacao);
+        switch (typeName) {
+            case "educacao":
+                featureCollection = new DefaultFeatureCollection("internal", TYPEEducacao);
+                break;
+            case "educacao_inf":
+                featureCollection = new DefaultFeatureCollection("internal", TYPEEducacao_inf);
+                break;
+            case "esporte":
+                featureCollection = new DefaultFeatureCollection("internal", TYPEEsporte);
+                break;
+            case "pontos_saude":
+                featureCollection = new DefaultFeatureCollection("internal", TYPEPontosSaude);
+                break;
+        }
+        
         featureCollection.add(createFeature(BLDR, pos, 1,typeName));
         FeatureLayer layer = new FeatureLayer(featureCollection, style);      
         SimpleFeatureStore store = (SimpleFeatureStore) dataStore.getFeatureSource( typeName );    
@@ -401,29 +443,29 @@ public class Main extends JFrame {
         mapContent.addLayer(layer);
         jMapFrame.repaint();          
     }
-    void adicionarEducacaoInf(MapMouseEvent ev) throws IOException {
-        DirectPosition2D p = ev.getWorldPos();
-        SimpleFeatureBuilder BLDR = new SimpleFeatureBuilder(TYPEEducacao_inf);
-        Coordinate pos = new Coordinate(p.getX(), p.getY());
-        String typeName = (String) featureTypeCBox.getSelectedItem();
-        featureSource = dataStore.getFeatureSource(typeName);        
-        Style style = SLD.createSimpleStyle(featureSource.getSchema());
-        featureCollection = new DefaultFeatureCollection("internal", TYPEEducacao_inf);
-        featureCollection.add(createFeature(BLDR, pos, 1,typeName));
-        FeatureLayer layer = new FeatureLayer(featureCollection, style);      
-        SimpleFeatureStore store = (SimpleFeatureStore) dataStore.getFeatureSource( typeName );    
-        Transaction transaction = new DefaultTransaction("Add Example");
-        store.setTransaction( transaction );
-        try {
-            store.addFeatures( featureCollection );
-            transaction.commit();
-        }
-        catch( Exception eek){
-            transaction.rollback();
-        }
-        mapContent.addLayer(layer);
-        jMapFrame.repaint();          
-    }
+//    void adicionarEducacaoInf(MapMouseEvent ev) throws IOException {
+//        DirectPosition2D p = ev.getWorldPos();
+//        SimpleFeatureBuilder BLDR = new SimpleFeatureBuilder(TYPEEducacao_inf);
+//        Coordinate pos = new Coordinate(p.getX(), p.getY());
+//        String typeName = (String) featureTypeCBox.getSelectedItem();
+//        featureSource = dataStore.getFeatureSource(typeName);        
+//        Style style = SLD.createSimpleStyle(featureSource.getSchema());
+//        featureCollection = new DefaultFeatureCollection("internal", TYPEEducacao_inf);
+//        featureCollection.add(createFeature(BLDR, pos, 1,typeName));
+//        FeatureLayer layer = new FeatureLayer(featureCollection, style);      
+//        SimpleFeatureStore store = (SimpleFeatureStore) dataStore.getFeatureSource( typeName );    
+//        Transaction transaction = new DefaultTransaction("Add Example");
+//        store.setTransaction( transaction );
+//        try {
+//            store.addFeatures( featureCollection );
+//            transaction.commit();
+//        }
+//        catch( Exception eek){
+//            transaction.rollback();
+//        }
+//        mapContent.addLayer(layer);
+//        jMapFrame.repaint();          
+//    }
 
     private SimpleFeature createFeature(SimpleFeatureBuilder bldr, Coordinate pos, int id, String typeName) {
         GeometryFactory geofactory = JTSFactoryFinder.getGeometryFactory(new Hints(Hints.JTS_SRID,id));
@@ -444,6 +486,22 @@ public class Main extends JFrame {
             bldr.add(JOptionPane.showInputDialog(frame, "Rua:"));
             bldr.add(JOptionPane.showInputDialog(frame, "Número:"));
         }
+        else if (typeName.equals("esporte")) {
+            bldr.add(p);
+            JFrame frame = new JFrame("Adicionar Informação sobre a Instituição");
+            bldr.add(JOptionPane.showInputDialog(frame, "Tipo:"));
+            bldr.add(JOptionPane.showInputDialog(frame, "Nome:"));
+            bldr.add(JOptionPane.showInputDialog(frame, "Logradouro:"));
+            bldr.add(JOptionPane.showInputDialog(frame, "Numero:"));
+            bldr.add(JOptionPane.showInputDialog(frame, "Localização:"));
+        }
+        else if (typeName.equals("pontos_saude")) {
+            bldr.add(p);
+            JFrame frame = new JFrame("Adicionar Informação sobre a Instituição");
+            bldr.add(JOptionPane.showInputDialog(frame, "Nome:"));
+            bldr.add(JOptionPane.showInputDialog(frame, "Rua:"));
+            bldr.add(JOptionPane.showInputDialog(frame, "Número:"));
+        }
         return bldr.buildFeature(null);
     }
     public void displaySelectedFeatures(Set<FeatureId> IDs) {
@@ -451,7 +509,6 @@ public class Main extends JFrame {
 
         if (IDs.isEmpty()) {
             style = criarDefaultStylePrimeiroLayer();
-
         } else {
             style = createSelectedStyle(IDs);
         }
@@ -469,7 +526,7 @@ public class Main extends JFrame {
 
         StyleBuilder styleBuilder = new StyleBuilder();
         font = styleBuilder.createFont(new java.awt.Font("Verdana",java.awt.Font.PLAIN,11));
-        Style style = SLD.createPolygonStyle(Color.RED, Color.GREEN, 1f, "nome", font);
+        Style style = SLD.createPolygonStyle(Color.BLACK, Color.BLACK, 1f, "nome", font);
      
         style.featureTypeStyles().add(fts);
         return style;
@@ -482,7 +539,7 @@ public class Main extends JFrame {
 
         StyleBuilder styleBuilder = new StyleBuilder();
         font = styleBuilder.createFont(new java.awt.Font("Verdana",java.awt.Font.PLAIN,11));
-        Style style = SLD.createPolygonStyle(Color.RED, Color.GREEN, 1f, "nome", font);
+        Style style = SLD.createPolygonStyle(Color.BLACK, Color.BLACK, 1f, "nome", font);
      
         style.featureTypeStyles().add(fts);
         return style;
