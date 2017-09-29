@@ -243,65 +243,35 @@ public class Main extends JFrame {
                 ));
             }
         }
-        switch (typeName) {
-            case "educacao":
-                btn = new JButton("Adicionar Ponto - Educação");
-                btn.addActionListener(e -> jMapFrame.getMapPane().setCursorTool(
-                        new CursorTool() {
-                            @Override
-                            public void onMouseClicked(MapMouseEvent ev) {
-                                try {
-                                    adicionarPonto(ev, typeName);
-                                } catch (IOException ex) {
-                                    Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, ex);
-                                }
-                            }
+        else{
+            switch (typeName) {
+                case "educacao":
+                    btn = new JButton("Adicionar Ponto - Educação");
+                    break;
+                case "educacao_inf":
+                    btn = new JButton("Adicionar Ponto - Educação Infantil");
+                    break;
+                case "esporte":
+                    btn = new JButton("Adicionar Ponto - Esporte");
+                    break;
+                case "pontos_saude":
+                    btn = new JButton("Adicionar Ponto - Pontos de Saude");
+                    break;
+                default:
+                    break;
+            }
+            btn.addActionListener(e -> jMapFrame.getMapPane().setCursorTool(
+                new CursorTool() {
+                    @Override
+                    public void onMouseClicked(MapMouseEvent ev) {
+                        try {
+                            adicionarPonto(ev, typeName);
+                        } catch (IOException ex) {
+                            Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, ex);
                         }
-                )); break;
-            case "educacao_inf":
-                btn = new JButton("Adicionar Ponto - Educação Infantil");
-                btn.addActionListener(e -> jMapFrame.getMapPane().setCursorTool(
-                        new CursorTool() {
-                            @Override
-                            public void onMouseClicked(MapMouseEvent ev) {
-                                try {
-                                    adicionarPonto(ev,typeName);
-                                } catch (IOException ex) {
-                                    Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, ex);
-                                }
-                            }
-                        }
-                )); break;
-            case "esporte":
-                btn = new JButton("Adicionar Ponto - Esporte");
-                        btn.addActionListener(e -> jMapFrame.getMapPane().setCursorTool(
-                        new CursorTool() {
-                            @Override
-                            public void onMouseClicked(MapMouseEvent ev) {
-                                try {
-                                    adicionarPonto(ev,typeName);
-                                } catch (IOException ex) {
-                                    Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, ex);
-                                }
-                            }
-                        }
-                )); break;
-            case "pontos_saude":
-                btn = new JButton("Adicionar Ponto - Pontos de Saude");
-                        btn.addActionListener(e -> jMapFrame.getMapPane().setCursorTool(
-                        new CursorTool() {
-                            @Override
-                            public void onMouseClicked(MapMouseEvent ev) {
-                                try {
-                                    adicionarPonto(ev,typeName);
-                                } catch (IOException ex) {
-                                    Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, ex);
-                                }
-                            }
-                        }
-                )); break;
-            default:
-                break;
+                    }
+                }
+            ));
         }
         toolBar.add(btn);
         
@@ -410,7 +380,6 @@ public class Main extends JFrame {
         DirectPosition2D p = ev.getWorldPos();
         SimpleFeatureBuilder BLDR = new SimpleFeatureBuilder(TYPEEducacao);
         Coordinate pos = new Coordinate(p.getX(), p.getY());
-//        String typeName = (String) featureTypeCBox.getSelectedItem();
         featureSource = dataStore.getFeatureSource(typeName);        
         Style style = SLD.createSimpleStyle(featureSource.getSchema());
         switch (typeName) {
@@ -443,29 +412,6 @@ public class Main extends JFrame {
         mapContent.addLayer(layer);
         jMapFrame.repaint();          
     }
-//    void adicionarEducacaoInf(MapMouseEvent ev) throws IOException {
-//        DirectPosition2D p = ev.getWorldPos();
-//        SimpleFeatureBuilder BLDR = new SimpleFeatureBuilder(TYPEEducacao_inf);
-//        Coordinate pos = new Coordinate(p.getX(), p.getY());
-//        String typeName = (String) featureTypeCBox.getSelectedItem();
-//        featureSource = dataStore.getFeatureSource(typeName);        
-//        Style style = SLD.createSimpleStyle(featureSource.getSchema());
-//        featureCollection = new DefaultFeatureCollection("internal", TYPEEducacao_inf);
-//        featureCollection.add(createFeature(BLDR, pos, 1,typeName));
-//        FeatureLayer layer = new FeatureLayer(featureCollection, style);      
-//        SimpleFeatureStore store = (SimpleFeatureStore) dataStore.getFeatureSource( typeName );    
-//        Transaction transaction = new DefaultTransaction("Add Example");
-//        store.setTransaction( transaction );
-//        try {
-//            store.addFeatures( featureCollection );
-//            transaction.commit();
-//        }
-//        catch( Exception eek){
-//            transaction.rollback();
-//        }
-//        mapContent.addLayer(layer);
-//        jMapFrame.repaint();          
-//    }
 
     private SimpleFeature createFeature(SimpleFeatureBuilder bldr, Coordinate pos, int id, String typeName) {
         GeometryFactory geofactory = JTSFactoryFinder.getGeometryFactory(new Hints(Hints.JTS_SRID,id));
