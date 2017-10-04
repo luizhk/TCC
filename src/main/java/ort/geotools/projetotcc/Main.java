@@ -79,11 +79,11 @@ import org.opengis.filter.identity.FeatureId;
 
 
 public class Main extends JFrame {
-    private static final Color LINE_COLOUR = Color.BLUE;
-    private static final Color FILL_COLOUR = Color.CYAN;
-    private static final Color LINE_COLOUR2 = Color.RED;
-    private static final Color FILL_COLOUR2 = Color.GREEN;
-    private static final Color SELECTED_COLOUR = Color.YELLOW;
+    private static final Color LINHA_COR = Color.BLUE;
+    private static final Color PREENCHIMENTO_COR = Color.CYAN;
+    private static final Color LINHA_COR2 = Color.RED;
+    private static final Color PREENCHIMENTO_COR2 = Color.GREEN;
+    private static final Color COR_SELECIONADA = Color.YELLOW;
     private static final float OPACITY = 1.0f;
     private static final float LINE_WIDTH = 1.0f;
     private static final float POINT_SIZE = 4.0f;
@@ -187,12 +187,12 @@ public class Main extends JFrame {
         String typeName2 = (String) featureTypeCBox2.getSelectedItem();
         featureSource = dataStore.getFeatureSource(typeName);
         setGeometry(featureSource);
-        Style style = criarDefaultStylePrimeiroLayer();
+        Style style = criarEstiloPadraoLayer1();
         FeatureLayer layer = new FeatureLayer(featureSource, style);
         featureSource2 = dataStore.getFeatureSource(typeName2);
         SimpleFeatureSource source2 = dataStore.getFeatureSource(typeName2);
         setGeometry(source2);
-        Style style2 = criarDefaultStyleSegundoLayer();
+        Style style2 = criarEstiloPadraoLayer2();
         FeatureLayer layer2 = new FeatureLayer(source2, style2);
         mapContent = new MapContent();
         mapContent.addLayer(layer);
@@ -284,7 +284,7 @@ public class Main extends JFrame {
     
     void visualizarInfo(MapMouseEvent ev) throws IOException, CQLException {
                        
-        System.out.println("Mouse click at: " + ev.getWorldPos());
+//        System.out.println("Mouse click at: " + ev.getWorldPos());
 
         Point screenPos = ev.getPoint();
         Rectangle screenRect = new Rectangle(screenPos.x-2, screenPos.y-2, 5, 5);
@@ -308,7 +308,7 @@ public class Main extends JFrame {
                     System.out.println("   " + feature.getIdentifier());
                     Geometry geom = (Geometry) feature.getDefaultGeometry();
                     
-                    displaySelectedFeatures(IDs);
+                    visualizarCaracteristicaSelecionada(IDs);
                     DecimalFormat df = new DecimalFormat("#.##");
                     JOptionPane.showMessageDialog(jMapFrame, "Area: " 
                             + df.format(geom.getArea()/1000000)+" Km²\n Nome: " 
@@ -450,13 +450,13 @@ public class Main extends JFrame {
         }
         return bldr.buildFeature(null);
     }
-    public void displaySelectedFeatures(Set<FeatureId> IDs) {
+    public void visualizarCaracteristicaSelecionada(Set<FeatureId> IDs) {
         Style style;
 
         if (IDs.isEmpty()) {
-            style = criarDefaultStylePrimeiroLayer();
+            style = criarEstiloPadraoLayer1();
         } else {
-            style = createSelectedStyle(IDs);
+            style = criarEstiloCaracteristicaSelecionada(IDs);
         }
 
         Layer layer = jMapFrame.getMapContent().layers().get(0);
@@ -464,8 +464,8 @@ public class Main extends JFrame {
         jMapFrame.getMapPane().repaint();
     }
 
-    private Style criarDefaultStylePrimeiroLayer() {
-        Rule rule = createRule(LINE_COLOUR, FILL_COLOUR);
+    private Style criarEstiloPadraoLayer1() {
+        Rule rule = createRule(LINHA_COR, PREENCHIMENTO_COR);
 
         FeatureTypeStyle fts = sf.createFeatureTypeStyle();
         fts.rules().add(rule);
@@ -477,8 +477,8 @@ public class Main extends JFrame {
         style.featureTypeStyles().add(fts);
         return style;
     }
-    private Style criarDefaultStyleSegundoLayer() {
-        Rule rule = createRule(LINE_COLOUR2, FILL_COLOUR2);
+    private Style criarEstiloPadraoLayer2() {
+        Rule rule = createRule(LINHA_COR2, PREENCHIMENTO_COR2);
 
         FeatureTypeStyle fts = sf.createFeatureTypeStyle();
         fts.rules().add(rule);
@@ -491,11 +491,11 @@ public class Main extends JFrame {
         return style;
     }
 
-    private Style createSelectedStyle(Set<FeatureId> IDs) {
-        Rule selectedRule = createRule(SELECTED_COLOUR, SELECTED_COLOUR);
+    private Style criarEstiloCaracteristicaSelecionada(Set<FeatureId> IDs) {
+        Rule selectedRule = createRule(COR_SELECIONADA, COR_SELECIONADA);
         selectedRule.setFilter(ff.id(IDs));
 
-        Rule otherRule = createRule(LINE_COLOUR, FILL_COLOUR);
+        Rule otherRule = createRule(LINHA_COR, PREENCHIMENTO_COR);
         otherRule.setElseFilter(true);
 
         FeatureTypeStyle fts = sf.createFeatureTypeStyle();
