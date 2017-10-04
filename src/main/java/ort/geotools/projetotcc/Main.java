@@ -132,7 +132,6 @@ public class Main extends JFrame {
     
     public Main() throws IOException, Exception {
         configuracaoInicial();
-        atualizarIU();
     }
     
     private void configuracaoInicial() throws IOException{
@@ -172,16 +171,25 @@ public class Main extends JFrame {
             }
         });
         
-    }
-    
-    private void atualizarIU() throws Exception {
         ComboBoxModel cbm = new DefaultComboBoxModel(dataStore.getTypeNames());
         ComboBoxModel cbm2 = new DefaultComboBoxModel(dataStore.getTypeNames());
         
         featureTypeCBox.setModel(cbm);
+        //remover tabelas referenets ao controle do postgis
+        featureTypeCBox.removeItemAt(9);
+        featureTypeCBox.removeItemAt(12);
+        featureTypeCBox.removeItemAt(12);
         featureTypeCBox2.setModel(cbm2);
+        //remover tabelas referenets ao controle do postgis
+        featureTypeCBox2.removeItemAt(9);
+        featureTypeCBox2.removeItemAt(12);
+        featureTypeCBox2.removeItemAt(12);
+        
+        StyleBuilder styleBuilder = new StyleBuilder();
+        font = styleBuilder.createFont(new java.awt.Font("Verdana",java.awt.Font.PLAIN,11));
+        
     }
-    
+      
     private void exibirGrafico() throws Exception {
         String typeName = (String) featureTypeCBox.getSelectedItem();
         String typeName2 = (String) featureTypeCBox2.getSelectedItem();
@@ -416,37 +424,49 @@ public class Main extends JFrame {
     private SimpleFeature createFeature(SimpleFeatureBuilder bldr, Coordinate pos, int id, String typeName) {
         GeometryFactory geofactory = JTSFactoryFinder.getGeometryFactory(new Hints(Hints.JTS_SRID,id));
         com.vividsolutions.jts.geom.Point p = geofactory.createPoint(pos);
-        if (typeName.equals("educacao")) {
-            bldr.add(p);
-            JFrame frame = new JFrame("Adicionar Informação sobre a Instituição");
-            bldr.add(JOptionPane.showInputDialog(frame, "Nome:"));
-            bldr.add(JOptionPane.showInputDialog(frame, "Rua:"));
-            bldr.add(JOptionPane.showInputDialog(frame, "Número:"));
-            bldr.add(JOptionPane.showInputDialog(frame, "Bairro:"));
-            bldr.add(JOptionPane.showInputDialog(frame, "CEP:"));
-        }
-        else if (typeName.equals("educacao_inf")) {
-            bldr.add(p);
-            JFrame frame = new JFrame("Adicionar Informação sobre a Instituição");
-            bldr.add(JOptionPane.showInputDialog(frame, "Nome da Instituição:"));
-            bldr.add(JOptionPane.showInputDialog(frame, "Rua:"));
-            bldr.add(JOptionPane.showInputDialog(frame, "Número:"));
-        }
-        else if (typeName.equals("esporte")) {
-            bldr.add(p);
-            JFrame frame = new JFrame("Adicionar Informação sobre a Instituição");
-            bldr.add(JOptionPane.showInputDialog(frame, "Tipo:"));
-            bldr.add(JOptionPane.showInputDialog(frame, "Nome:"));
-            bldr.add(JOptionPane.showInputDialog(frame, "Logradouro:"));
-            bldr.add(JOptionPane.showInputDialog(frame, "Numero:"));
-            bldr.add(JOptionPane.showInputDialog(frame, "Localização:"));
-        }
-        else if (typeName.equals("pontos_saude")) {
-            bldr.add(p);
-            JFrame frame = new JFrame("Adicionar Informação sobre a Instituição");
-            bldr.add(JOptionPane.showInputDialog(frame, "Nome:"));
-            bldr.add(JOptionPane.showInputDialog(frame, "Rua:"));
-            bldr.add(JOptionPane.showInputDialog(frame, "Número:"));
+        switch (typeName) {
+            case "educacao":
+                {
+                    bldr.add(p);
+                    JFrame frame = new JFrame("Adicionar Informação sobre a Instituição");
+                    bldr.add(JOptionPane.showInputDialog(frame, "Nome:"));
+                    bldr.add(JOptionPane.showInputDialog(frame, "Rua:"));
+                    bldr.add(JOptionPane.showInputDialog(frame, "Número:"));
+                    bldr.add(JOptionPane.showInputDialog(frame, "Bairro:"));
+                    bldr.add(JOptionPane.showInputDialog(frame, "CEP:"));
+                    break;
+                }
+            case "educacao_inf":
+                {
+                    bldr.add(p);
+                    JFrame frame = new JFrame("Adicionar Informação sobre a Instituição");
+                    bldr.add(JOptionPane.showInputDialog(frame, "Nome da Instituição:"));
+                    bldr.add(JOptionPane.showInputDialog(frame, "Rua:"));
+                    bldr.add(JOptionPane.showInputDialog(frame, "Número:"));
+                    break;
+                }
+            case "esporte":
+                {
+                    bldr.add(p);
+                    JFrame frame = new JFrame("Adicionar Informação sobre a Instituição");
+                    bldr.add(JOptionPane.showInputDialog(frame, "Tipo:"));
+                    bldr.add(JOptionPane.showInputDialog(frame, "Nome:"));
+                    bldr.add(JOptionPane.showInputDialog(frame, "Logradouro:"));
+                    bldr.add(JOptionPane.showInputDialog(frame, "Numero:"));
+                    bldr.add(JOptionPane.showInputDialog(frame, "Localização:"));
+                    break;
+                }
+            case "pontos_saude":
+                {
+                    bldr.add(p);
+                    JFrame frame = new JFrame("Adicionar Informação sobre a Instituição");
+                    bldr.add(JOptionPane.showInputDialog(frame, "Nome:"));
+                    bldr.add(JOptionPane.showInputDialog(frame, "Rua:"));
+                    bldr.add(JOptionPane.showInputDialog(frame, "Número:"));
+                    break;
+                }
+            default:
+                break;
         }
         return bldr.buildFeature(null);
     }
@@ -465,46 +485,39 @@ public class Main extends JFrame {
     }
 
     private Style criarEstiloPadraoLayer1() {
+        Style style = SLD.createPolygonStyle(Color.BLACK, Color.BLACK, 1f, "nome", font);
+        
         Rule rule = createRule(LINHA_COR, PREENCHIMENTO_COR);
-
         FeatureTypeStyle fts = sf.createFeatureTypeStyle();
         fts.rules().add(rule);
 
-        StyleBuilder styleBuilder = new StyleBuilder();
-        font = styleBuilder.createFont(new java.awt.Font("Verdana",java.awt.Font.PLAIN,11));
-        Style style = SLD.createPolygonStyle(Color.BLACK, Color.BLACK, 1f, "nome", font);
-     
         style.featureTypeStyles().add(fts);
         return style;
     }
     private Style criarEstiloPadraoLayer2() {
+        Style style = SLD.createPolygonStyle(Color.BLACK, Color.BLACK, 1f, "nome", font);
+        
         Rule rule = createRule(LINHA_COR2, PREENCHIMENTO_COR2);
-
         FeatureTypeStyle fts = sf.createFeatureTypeStyle();
         fts.rules().add(rule);
-
-        StyleBuilder styleBuilder = new StyleBuilder();
-        font = styleBuilder.createFont(new java.awt.Font("Verdana",java.awt.Font.PLAIN,11));
-        Style style = SLD.createPolygonStyle(Color.BLACK, Color.BLACK, 1f, "nome", font);
-     
+        
         style.featureTypeStyles().add(fts);
         return style;
     }
 
     private Style criarEstiloCaracteristicaSelecionada(Set<FeatureId> IDs) {
-        Rule selectedRule = createRule(COR_SELECIONADA, COR_SELECIONADA);
-        selectedRule.setFilter(ff.id(IDs));
+        Style style = SLD.createPolygonStyle(Color.red, Color.green, 1f, "nome", font);
+        
+        Rule regraRegiaoSelecionada = createRule(COR_SELECIONADA, COR_SELECIONADA);
+        regraRegiaoSelecionada.setFilter(ff.id(IDs));
 
-        Rule otherRule = createRule(LINHA_COR, PREENCHIMENTO_COR);
-        otherRule.setElseFilter(true);
+        Rule regraOutrasRegioes = createRule(LINHA_COR, PREENCHIMENTO_COR);
+        regraOutrasRegioes.setElseFilter(true);
 
         FeatureTypeStyle fts = sf.createFeatureTypeStyle();
-        fts.rules().add(selectedRule);
-        fts.rules().add(otherRule);
-
-        StyleBuilder styleBuilder = new StyleBuilder();
-        font = styleBuilder.createFont(new java.awt.Font("Verdana",java.awt.Font.PLAIN,11));
-        Style style = SLD.createPolygonStyle(Color.red, Color.green, 1f, "nome", font);
+        fts.rules().add(regraRegiaoSelecionada);
+        fts.rules().add(regraOutrasRegioes);
+        
         style.featureTypeStyles().add(fts);
         return style;
     }
