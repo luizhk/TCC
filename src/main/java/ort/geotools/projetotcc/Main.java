@@ -132,8 +132,7 @@ public class Main extends JFrame {
     
     public Main() throws IOException, Exception {
         configuracaoInicial();
-    }
-    
+    }    
     private void configuracaoInicial() throws IOException{
         featureSource = null;
         mapContent = new MapContent();
@@ -188,23 +187,20 @@ public class Main extends JFrame {
         StyleBuilder styleBuilder = new StyleBuilder();
         font = styleBuilder.createFont(new java.awt.Font("Verdana",java.awt.Font.PLAIN,11));
         
-    }
-      
+    }      
     private void exibirGrafico() throws Exception {
         String typeName = (String) featureTypeCBox.getSelectedItem();
         String typeName2 = (String) featureTypeCBox2.getSelectedItem();
         featureSource = dataStore.getFeatureSource(typeName);
-        setGeometry(featureSource);
+        definirGeometria(featureSource);
         Style style = criarEstiloPadraoLayer1();
         FeatureLayer layer = new FeatureLayer(featureSource, style);
         featureSource2 = dataStore.getFeatureSource(typeName2);
         SimpleFeatureSource source2 = dataStore.getFeatureSource(typeName2);
-        setGeometry(source2);
+        definirGeometria(source2);
         Style style2 = criarEstiloPadraoLayer2();
         FeatureLayer layer2 = new FeatureLayer(source2, style2);
         mapContent = new MapContent();
-        mapContent.addLayer(layer2);
-        mapContent.addLayer(layer);
         jMapFrame = new JMapFrame();
         jMapFrame.enableToolBar( true );
         jMapFrame.enableStatusBar( false );
@@ -230,11 +226,7 @@ public class Main extends JFrame {
                     }
                 }
                 ));
-                if (typeName.equals(typeName2)){
-                    //remover segundo layer da visualização
-                    mapContent.removeLayer(layer2);
-                    jMapFrame.repaint();
-                }
+                mapContent.addLayer(layer);
             }
             else{
                 btn = new JButton("Visualizar Incidência de Pontos");
@@ -250,6 +242,8 @@ public class Main extends JFrame {
                     }
                 }
                 ));
+                mapContent.addLayer(layer);
+                mapContent.addLayer(layer2);
             }
         }
         else{
@@ -281,16 +275,16 @@ public class Main extends JFrame {
                     }
                 }
             ));
+            mapContent.addLayer(layer2);
+            mapContent.addLayer(layer);
         }
         toolBar.add(btn);
         
-
         jMapFrame.setMapContent(mapContent);
         jMapFrame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         jMapFrame.setExtendedState(JFrame.MAXIMIZED_BOTH);                
         jMapFrame.setVisible(true);
-    }
-    
+    }  
     void visualizarInfo(MapMouseEvent ev) throws IOException, CQLException {
         Point coordenadasClick = ev.getPoint();
         Rectangle retanguloAux = new Rectangle(coordenadasClick.x-2, 
@@ -340,7 +334,7 @@ public class Main extends JFrame {
         
     }
     void visualizarPontos(MapMouseEvent ev) throws IOException, CQLException {
-
+        String nomeFeature;
         Point screenPos = ev.getPoint();
         Rectangle screenRect = new Rectangle(screenPos.x-2, screenPos.y-2, 5, 5);
 
@@ -354,17 +348,21 @@ public class Main extends JFrame {
         
         SimpleFeatureType schema = featureSource.getSchema();
         String typeName = schema.getTypeName();
-        
+        nomeFeature = typeName;
         SimpleFeatureType schema2 = featureSource2.getSchema();
         String typeName2 = schema2.getTypeName();
         String geomName2 = schema2.getGeometryDescriptor().getLocalName();
         
         SimpleFeatureCollection outerFeatures = featureSource.getFeatures(filter);
         SimpleFeatureIterator iterator = outerFeatures.features();
-            int max = 0;
+        Set<FeatureId> IDs = new HashSet<>();
+        int max = 0;
         try {
             while (iterator.hasNext()) {
+                
                 SimpleFeature feature = iterator.next();
+                IDs.add(feature.getIdentifier());
+                visualizarCaracteristicaSelecionada(IDs);
                 try {
                     Geometry geometry = (Geometry) feature.getDefaultGeometry();
                     if (!geometry.isValid()) {
@@ -376,17 +374,17 @@ public class Main extends JFrame {
                     SimpleFeatureCollection join = featureSource2.getFeatures(innerQuery);
                     int size = join.size();
                     max = Math.max(max, size);
+                    nomeFeature = (String) feature.getAttribute("nome");
                 } catch (Exception skipBadData) {
                 }
             }
         } finally {
             iterator.close();
         }
-        JOptionPane.showMessageDialog(jMapFrame, max + " " + typeName2 + " pontos em " + typeName);
+        JOptionPane.showMessageDialog(jMapFrame, max +  " pontos de "+ typeName2 +" em " + nomeFeature);
 
         
     }   
-    
     void adicionarPonto(MapMouseEvent ev, String typeName) throws IOException {
         DirectPosition2D p = ev.getWorldPos();
         SimpleFeatureBuilder BLDR = null;
@@ -427,7 +425,6 @@ public class Main extends JFrame {
         mapContent.addLayer(layer);
         jMapFrame.repaint();          
     }
-
     private SimpleFeature criarCaracteristica(SimpleFeatureBuilder bldr, Coordinate pos, int id, String typeName) {
         GeometryFactory geofactory = JTSFactoryFinder.getGeometryFactory(new Hints(Hints.JTS_SRID,id));
         com.vividsolutions.jts.geom.Point p = geofactory.createPoint(pos);
@@ -486,11 +483,10 @@ public class Main extends JFrame {
         ((FeatureLayer) layer).setStyle(style);
         jMapFrame.getMapPane().repaint();
     }
-
     private Style criarEstiloPadraoLayer1() {
         Style style = SLD.createPolygonStyle(Color.BLACK, Color.BLACK, 1f, "nome", font);
         
-        Rule rule = createRule(LINHA_COR, PREENCHIMENTO_COR);
+        Rule rule = criarRegra(LINHA_COR, PREENCHIMENTO_COR);
         FeatureTypeStyle fts = sf.createFeatureTypeStyle();
         fts.rules().add(rule);
 
@@ -500,21 +496,21 @@ public class Main extends JFrame {
     private Style criarEstiloPadraoLayer2() {
         Style style = SLD.createPolygonStyle(Color.BLACK, Color.BLACK, 1f, "nome", font);
         
-        Rule rule = createRule(LINHA_COR2, PREENCHIMENTO_COR2);
+        Rule rule = criarRegra(LINHA_COR2, PREENCHIMENTO_COR2);
         FeatureTypeStyle fts = sf.createFeatureTypeStyle();
         fts.rules().add(rule);
         
         style.featureTypeStyles().add(fts);
         return style;
     }
-
+    
     private Style criarEstiloCaracteristicaSelecionada(Set<FeatureId> IDs) {
         Style style = SLD.createPolygonStyle(Color.red, Color.green, 1f, "nome", font);
         
-        Rule regraRegiaoSelecionada = createRule(COR_SELECIONADA, COR_SELECIONADA);
+        Rule regraRegiaoSelecionada = criarRegra(COR_SELECIONADA, COR_SELECIONADA);
         regraRegiaoSelecionada.setFilter(ff.id(IDs));
 
-        Rule regraOutrasRegioes = createRule(LINHA_COR, PREENCHIMENTO_COR);
+        Rule regraOutrasRegioes = criarRegra(LINHA_COR, PREENCHIMENTO_COR);
         regraOutrasRegioes.setElseFilter(true);
 
         FeatureTypeStyle fts = sf.createFeatureTypeStyle();
@@ -524,8 +520,8 @@ public class Main extends JFrame {
         style.featureTypeStyles().add(fts);
         return style;
     }
-
-    private Rule createRule(Color outlineColor, Color fillColor) {
+    
+    private Rule criarRegra(Color outlineColor, Color fillColor) {
         Symbolizer symbolizer = null;
         Fill fill;
         Stroke stroke = sf.createStroke(ff.literal(outlineColor), ff.literal(LINE_WIDTH));
@@ -559,8 +555,8 @@ public class Main extends JFrame {
         rule.symbolizers().add(symbolizer);
         return rule;
     }
-
-    private void setGeometry(SimpleFeatureSource source) {
+    
+    private void definirGeometria(SimpleFeatureSource source) {
         GeometryDescriptor geomDesc = source.getSchema().getGeometryDescriptor();
         geometryAttributeName = geomDesc.getLocalName();
 
@@ -580,6 +576,7 @@ public class Main extends JFrame {
         }
 
     }
+    
     public static void main(String[] args) throws Exception {
         JFrame frame = new Main();
         frame.setVisible(true);
