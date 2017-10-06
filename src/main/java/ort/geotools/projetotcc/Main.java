@@ -203,11 +203,12 @@ public class Main extends JFrame {
         Style style2 = criarEstiloPadraoLayer2();
         FeatureLayer layer2 = new FeatureLayer(source2, style2);
         mapContent = new MapContent();
-        mapContent.addLayer(layer);
         mapContent.addLayer(layer2);
+        mapContent.addLayer(layer);
         jMapFrame = new JMapFrame();
         jMapFrame.enableToolBar( true );
         jMapFrame.enableStatusBar( false );
+        jMapFrame.enableLayerTable( true );
         jMapFrame.enableTool(PAN, ZOOM, SCROLLWHEEL, RESET);
         
         jMapFrame.enableInputMethods( true );
@@ -231,7 +232,7 @@ public class Main extends JFrame {
                 ));
                 if (typeName.equals(typeName2)){
                     //remover segundo layer da visualização
-                    mapContent.layers().remove(1);
+                    mapContent.removeLayer(layer2);
                     jMapFrame.repaint();
                 }
             }
@@ -291,24 +292,25 @@ public class Main extends JFrame {
     }
     
     void visualizarInfo(MapMouseEvent ev) throws IOException, CQLException {
-                       
-//        System.out.println("Mouse click at: " + ev.getWorldPos());
-
-        Point screenPos = ev.getPoint();
-        Rectangle screenRect = new Rectangle(screenPos.x-2, screenPos.y-2, 5, 5);
+        Point coordenadasClick = ev.getPoint();
+        Rectangle retanguloAux = new Rectangle(coordenadasClick.x-2, 
+                                               coordenadasClick.y-2, 5, 5);
 
         AffineTransform screenToWorld = jMapFrame.getMapPane().getScreenToWorldTransform();
-        Rectangle2D worldRect = screenToWorld.createTransformedShape(screenRect).getBounds2D();
-        ReferencedEnvelope bbox = new ReferencedEnvelope(worldRect, jMapFrame.getMapContent().getCoordinateReferenceSystem());
+        Rectangle2D worldRect = screenToWorld.createTransformedShape(retanguloAux).getBounds2D();
+        ReferencedEnvelope bbox = new ReferencedEnvelope(worldRect, 
+                jMapFrame.getMapContent().getCoordinateReferenceSystem());
 
-        Filter filter = CQL.toFilter("BBOX(geom, " + bbox.getMinX() +
+        Filter filtro = CQL.toFilter("BBOX(geom, " + bbox.getMinX() +
         ", " + bbox.getMinY() + ", " + bbox.getMaxX() + ", " + bbox.getMaxY()
         + ")");
+        
+        
         try {
-            SimpleFeatureCollection selectedFeatures =  featureSource.getFeatures(filter);
+            SimpleFeatureCollection featureSelec =  featureSource.getFeatures(filtro);
 
             Set<FeatureId> IDs = new HashSet<>();
-            try (SimpleFeatureIterator iter = selectedFeatures.features()) {
+            try (SimpleFeatureIterator iter = featureSelec.features()) {
                 while (iter.hasNext()) {
                     
                     SimpleFeature feature = iter.next();                    
@@ -320,7 +322,8 @@ public class Main extends JFrame {
                     DecimalFormat df = new DecimalFormat("#.##");
                     JOptionPane.showMessageDialog(jMapFrame, "Area: " 
                             + df.format(geom.getArea()/1000000)+" Km²\n Nome: " 
-                            +(String) feature.getAttribute("nome"), "Informações", JOptionPane.PLAIN_MESSAGE);
+                            +(String) feature.getAttribute("nome"), "Informações", 
+                            JOptionPane.PLAIN_MESSAGE);
                     break;
                 }
             }
@@ -382,33 +385,37 @@ public class Main extends JFrame {
         JOptionPane.showMessageDialog(jMapFrame, max + " " + typeName2 + " pontos em " + typeName);
 
         
-    }
+    }   
     
     void adicionarPonto(MapMouseEvent ev, String typeName) throws IOException {
         DirectPosition2D p = ev.getWorldPos();
-        SimpleFeatureBuilder BLDR = new SimpleFeatureBuilder(TYPEEducacao);
+        SimpleFeatureBuilder BLDR = null;
         Coordinate pos = new Coordinate(p.getX(), p.getY());
         featureSource = dataStore.getFeatureSource(typeName);        
         Style style = SLD.createSimpleStyle(featureSource.getSchema());
         switch (typeName) {
-            case "educacao":
-                featureCollection = new DefaultFeatureCollection("internal", TYPEEducacao);
-                break;
             case "educacao_inf":
+                BLDR = new SimpleFeatureBuilder(TYPEEducacao_inf);
                 featureCollection = new DefaultFeatureCollection("internal", TYPEEducacao_inf);
                 break;
+            case "educacao":
+                BLDR = new SimpleFeatureBuilder(TYPEEducacao);
+                featureCollection = new DefaultFeatureCollection("internal", TYPEEducacao);
+                break;
             case "esporte":
+                BLDR = new SimpleFeatureBuilder(TYPEEsporte);
                 featureCollection = new DefaultFeatureCollection("internal", TYPEEsporte);
                 break;
             case "pontos_saude":
+                BLDR = new SimpleFeatureBuilder(TYPEPontosSaude);
                 featureCollection = new DefaultFeatureCollection("internal", TYPEPontosSaude);
                 break;
         }
         
-        featureCollection.add(createFeature(BLDR, pos, 1,typeName));
+        featureCollection.add(criarCaracteristica(BLDR, pos, 1,typeName));
         FeatureLayer layer = new FeatureLayer(featureCollection, style);      
         SimpleFeatureStore store = (SimpleFeatureStore) dataStore.getFeatureSource( typeName );    
-        Transaction transaction = new DefaultTransaction("Add Example");
+        Transaction transaction = new DefaultTransaction("Adicionar Ponto");
         store.setTransaction( transaction );
         try {
             store.addFeatures( featureCollection );
@@ -421,12 +428,19 @@ public class Main extends JFrame {
         jMapFrame.repaint();          
     }
 
-    private SimpleFeature createFeature(SimpleFeatureBuilder bldr, Coordinate pos, int id, String typeName) {
+    private SimpleFeature criarCaracteristica(SimpleFeatureBuilder bldr, Coordinate pos, int id, String typeName) {
         GeometryFactory geofactory = JTSFactoryFinder.getGeometryFactory(new Hints(Hints.JTS_SRID,id));
         com.vividsolutions.jts.geom.Point p = geofactory.createPoint(pos);
         switch (typeName) {
-            case "educacao":
-                {
+            case "educacao_inf":{
+                    bldr.add(p);
+                    JFrame frame = new JFrame("Adicionar Informação sobre a Instituição");
+                    bldr.add(JOptionPane.showInputDialog(frame, "Nome da Instituição:"));
+                    bldr.add(JOptionPane.showInputDialog(frame, "Rua:"));
+                    bldr.add(JOptionPane.showInputDialog(frame, "Número:"));
+                    break;
+                }
+            case "educacao":{
                     bldr.add(p);
                     JFrame frame = new JFrame("Adicionar Informação sobre a Instituição");
                     bldr.add(JOptionPane.showInputDialog(frame, "Nome:"));
@@ -436,17 +450,7 @@ public class Main extends JFrame {
                     bldr.add(JOptionPane.showInputDialog(frame, "CEP:"));
                     break;
                 }
-            case "educacao_inf":
-                {
-                    bldr.add(p);
-                    JFrame frame = new JFrame("Adicionar Informação sobre a Instituição");
-                    bldr.add(JOptionPane.showInputDialog(frame, "Nome da Instituição:"));
-                    bldr.add(JOptionPane.showInputDialog(frame, "Rua:"));
-                    bldr.add(JOptionPane.showInputDialog(frame, "Número:"));
-                    break;
-                }
-            case "esporte":
-                {
+            case "esporte":{
                     bldr.add(p);
                     JFrame frame = new JFrame("Adicionar Informação sobre a Instituição");
                     bldr.add(JOptionPane.showInputDialog(frame, "Tipo:"));
@@ -456,8 +460,7 @@ public class Main extends JFrame {
                     bldr.add(JOptionPane.showInputDialog(frame, "Localização:"));
                     break;
                 }
-            case "pontos_saude":
-                {
+            case "pontos_saude":{
                     bldr.add(p);
                     JFrame frame = new JFrame("Adicionar Informação sobre a Instituição");
                     bldr.add(JOptionPane.showInputDialog(frame, "Nome:"));
