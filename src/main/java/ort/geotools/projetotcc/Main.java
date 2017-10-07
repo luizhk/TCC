@@ -88,8 +88,8 @@ public class Main extends JFrame {
     private static final float LINE_WIDTH = 1.0f;
     private static final float POINT_SIZE = 4.0f;
     private static Font font;
-    private JComboBox featureTypeCBox;
-    private JComboBox featureTypeCBox2;
+    private JComboBox cBoxTabelas;
+    private JComboBox cBoxTabelas2;
     private String geometryAttributeName;
     private final StyleFactory sf = CommonFactoryFinder.getStyleFactory();
     private final FilterFactory2 ff = CommonFactoryFinder.getFilterFactory2();
@@ -147,12 +147,12 @@ public class Main extends JFrame {
         JMenuBar menubar = new JMenuBar();
         setJMenuBar(menubar);
         
-        featureTypeCBox = new JComboBox();
-        featureTypeCBox2 = new JComboBox();
+        cBoxTabelas = new JComboBox();
+        cBoxTabelas2 = new JComboBox();
         menubar.add(label1);
-        menubar.add(featureTypeCBox);
+        menubar.add(cBoxTabelas);
         menubar.add(label2);
-        menubar.add(featureTypeCBox2);
+        menubar.add(cBoxTabelas2);
 
         JMenu dataMenu = new JMenu("Dados");
         menubar.add(dataMenu);
@@ -173,33 +173,32 @@ public class Main extends JFrame {
         ComboBoxModel cbm = new DefaultComboBoxModel(dataStore.getTypeNames());
         ComboBoxModel cbm2 = new DefaultComboBoxModel(dataStore.getTypeNames());
         
-        featureTypeCBox.setModel(cbm);
+        cBoxTabelas.setModel(cbm);
         //remover tabelas referenets ao controle do postgis
-        featureTypeCBox.removeItemAt(9);
-        featureTypeCBox.removeItemAt(12);
-        featureTypeCBox.removeItemAt(12);
-        featureTypeCBox2.setModel(cbm2);
+        cBoxTabelas.removeItemAt(9);
+        cBoxTabelas.removeItemAt(12);
+        cBoxTabelas.removeItemAt(12);
+        cBoxTabelas2.setModel(cbm2);
         //remover tabelas referenets ao controle do postgis
-        featureTypeCBox2.removeItemAt(9);
-        featureTypeCBox2.removeItemAt(12);
-        featureTypeCBox2.removeItemAt(12);
+        cBoxTabelas2.removeItemAt(9);
+        cBoxTabelas2.removeItemAt(12);
+        cBoxTabelas2.removeItemAt(12);
         
         StyleBuilder styleBuilder = new StyleBuilder();
         font = styleBuilder.createFont(new java.awt.Font("Verdana",java.awt.Font.PLAIN,11));
         
     }      
     private void exibirGrafico() throws Exception {
-        String typeName = (String) featureTypeCBox.getSelectedItem();
-        String typeName2 = (String) featureTypeCBox2.getSelectedItem();
-        featureSource = dataStore.getFeatureSource(typeName);
+        String nomeTabela1 = (String) cBoxTabelas.getSelectedItem();
+        String nomeTabela2 = (String) cBoxTabelas2.getSelectedItem();
+        featureSource = dataStore.getFeatureSource(nomeTabela1);
         definirGeometria(featureSource);
         Style style = criarEstiloPadraoLayer1();
         FeatureLayer layer = new FeatureLayer(featureSource, style);
-        featureSource2 = dataStore.getFeatureSource(typeName2);
-        SimpleFeatureSource source2 = dataStore.getFeatureSource(typeName2);
-        definirGeometria(source2);
+        featureSource2 = dataStore.getFeatureSource(nomeTabela2);
+        definirGeometria(featureSource2);
         Style style2 = criarEstiloPadraoLayer2();
-        FeatureLayer layer2 = new FeatureLayer(source2, style2);
+        FeatureLayer layer2 = new FeatureLayer(featureSource2, style2);
         mapContent = new MapContent();
         jMapFrame = new JMapFrame();
         jMapFrame.enableToolBar( true );
@@ -211,8 +210,8 @@ public class Main extends JFrame {
         JToolBar toolBar = jMapFrame.getToolBar();
         toolBar.addSeparator();
         JButton btn = null;
-        if (("bairros distritos geomorfologia limite-município loteamentos quadras zoneamento limite-municipio").contains(typeName)) {
-            if (("bairros distritos geomorfologia limite-município loteamentos quadras zoneamento limite-municipio").contains(typeName2)) {
+        if (("bairros distritos geomorfologia limite-município loteamentos quadras zoneamento limite-municipio").contains(nomeTabela1)) {
+            if (("bairros distritos geomorfologia limite-município loteamentos quadras zoneamento limite-municipio").contains(nomeTabela2)) {
                 btn = new JButton("Visualizar Informações Adicionais");
                 btn.addActionListener(e -> jMapFrame.getMapPane().setCursorTool(
                 new CursorTool() {
@@ -247,7 +246,7 @@ public class Main extends JFrame {
             }
         }
         else{
-            switch (typeName) {
+            switch (nomeTabela1) {
                 case "educacao":
                     btn = new JButton("Adicionar Ponto - Educação");
                     break;
@@ -263,12 +262,11 @@ public class Main extends JFrame {
                 default:
                     break;
             }
-            btn.addActionListener(e -> jMapFrame.getMapPane().setCursorTool(
-                new CursorTool() {
+            btn.addActionListener(e -> jMapFrame.getMapPane().setCursorTool(new CursorTool() {
                     @Override
                     public void onMouseClicked(MapMouseEvent ev) {
                         try {
-                            adicionarPonto(ev, typeName);
+                            adicionarPonto(ev, nomeTabela1);
                         } catch (IOException ex) {
                             Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, ex);
                         }
@@ -334,6 +332,7 @@ public class Main extends JFrame {
         
     }
     void visualizarPontos(MapMouseEvent ev) throws IOException, CQLException {
+        geometryType = GeomType.POLYGON;
         String nomeFeature;
         Point screenPos = ev.getPoint();
         Rectangle screenRect = new Rectangle(screenPos.x-2, screenPos.y-2, 5, 5);
@@ -470,6 +469,7 @@ public class Main extends JFrame {
         }
         return bldr.buildFeature(null);
     }
+    
     public void visualizarCaracteristicaSelecionada(Set<FeatureId> IDs) {
         Style style;
 
